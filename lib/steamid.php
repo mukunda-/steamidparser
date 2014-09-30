@@ -52,8 +52,13 @@ class SteamIDResolutionException extends Exception {
  */
 class SteamID {
 	
-	private $value;     // RAW value as a string.
-	public $formatted;  // array of converted values.
+	// RAW Steam ID value as a string. (a plain number.)
+	public $value;
+	
+	// Array of converted values. Indexed by FORMAT_xxx
+	// this is a cache of formatted values, filled in
+	// by Format or Parse.
+	public $formatted;
 	
 	const FORMAT_AUTO  = 0; // Auto-detect format --- this also supports other
 							// unlisted formats such as profile URLs.
@@ -139,8 +144,8 @@ class SteamID {
 				}
 				
 				// convert to raw.
-				$a = bcmul( $matches[2], '2' );
-				$a = bcadd( $a, $matches[1] );
+				$a = bcmul( $matches[2], '2', 0 );
+				$a = bcadd( $a, $matches[1], 0 );
 				
 				$result = new self( $a );
 				$result->formatted[ self::FORMAT_32BIT ] = $input;
@@ -152,11 +157,11 @@ class SteamID {
 				if( !preg_match( '/^[0-9]+$/', $input ) ) return FALSE;
 				
 				// convert to raw (subtract base)
-				$a = bcsub( $input, self::STEAMID64_BASE );
+				$a = bcsub( $input, self::STEAMID64_BASE, 0 );
 				
 				// sanity range check.
-				if( bccomp( $a, '0' ) < 0 ) return FALSE;
-				if( bccomp( $a, self::MAX_VALUE ) > 0 ) return FALSE;
+				if( bccomp( $a, '0', 0 ) < 0 ) return FALSE;
+				if( bccomp( $a, self::MAX_VALUE, 0 ) > 0 ) return FALSE;
 				
 				$result = new self( $a );
 				$result->formatted[ self::FORMAT_64BIT ] = $input;
@@ -172,7 +177,7 @@ class SteamID {
 				$a = $matches[1];
 				
 				// sanity range check.
-				if( bccomp( $a, self::MAX_VALUE ) > 0 ) return FALSE;
+				if( bccomp( $a, self::MAX_VALUE, 0 ) > 0 ) return FALSE;
 				$result = new self( $a );
 				$result->formatted[ self::FORMAT_V3 ] = $input;
 				return $result;
@@ -187,10 +192,10 @@ class SteamID {
 				$a = $input;
 				
 				// 32-bit range check
-				if( bccomp( $a, '2147483647' ) > 0 ) return FALSE;
-				if( bccomp( $a, '-2147483648' ) < 0 ) return FALSE;
-				if( bccomp( $a, '0' ) < 0 ) {
-					$a = bcadd( $a, '4294967296' );
+				if( bccomp( $a, '2147483647', 0 ) > 0 ) return FALSE;
+				if( bccomp( $a, '-2147483648', 0 ) < 0 ) return FALSE;
+				if( bccomp( $a, '0', 0 ) < 0 ) {
+					$a = bcadd( $a, '4294967296', 0 );
 				}
 				$result = new self( $a );
 				$result->formatted[ self::FORMAT_S32 ] = $input;
@@ -204,7 +209,7 @@ class SteamID {
 				}
 				
 				// sanity range check
-				if( bccomp( $input, self::MAX_VALUE ) > 0 ) return FALSE;
+				if( bccomp( $input, self::MAX_VALUE, 0 ) > 0 ) return FALSE;
 				return new self( $input );
 		}
 		
@@ -223,7 +228,7 @@ class SteamID {
 		if( $result !== FALSE ) return $result;
 		
 		if( preg_match( 
-				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com/profiles/([0-9]+)$/',
+				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)$/',
 				$input, $matches ) ) {
 			$result = self::Parse( $matches[1], self::FORMAT_64BIT );
 			if( $result !== FALSE ) return $result;
@@ -231,7 +236,7 @@ class SteamID {
 		
 		// TODO find out what characters are valid in customURLs.
 		if( preg_match( 
-				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com/id/([a-zA-Z0-9]+)$/',
+				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/id\/([a-zA-Z0-9]+)$/',
 				$input, $matches ) ) {
 				
 			$result = self::ConvertVanityURL( $matches[1] );
@@ -335,14 +340,14 @@ class SteamID {
 		switch( $format ) {
 			case self::FORMAT_32BIT:
 				$z = bcdiv( $this->value, '2', 0 );
-				$y = bcmul( $z, '2' );
-				$y = bcsub( $this->value, $y );
+				$y = bcmul( $z, '2', 0 );
+				$y = bcsub( $this->value, $y, 0 );
 				$formatted = "STEAM_1:$y:$z";
 				$this->formatted[$format] = $formatted;
 				return $formatted;
 				
 			case self::FORMAT_64BIT:
-				$formatted = bcadd( $this->value, self::STEAMID64_BASE );
+				$formatted = bcadd( $this->value, self::STEAMID64_BASE, 0 );
 				$this->formatted[$format] = $formatted;
 				return $formatted;
 				
@@ -352,12 +357,12 @@ class SteamID {
 				return $formatted;
 				
 			case self::FORMAT_S32:
-				if( bccomp( $this->value, '4294967296' ) >= 0 ) {
+				if( bccomp( $this->value, '4294967296', 0 ) >= 0 ) {
 					return FALSE; // too large for s32.
 				}
 				
-				if( bccomp( $this->value, '2147483648' ) >= 0 ) {
-					$formatted = bcsub( $this->value, '4294967296' );
+				if( bccomp( $this->value, '2147483648', 0 ) >= 0 ) {
+					$formatted = bcsub( $this->value, '4294967296', 0 );
 				} else {
 					$formatted = $this->value;
 				}
@@ -366,6 +371,7 @@ class SteamID {
 		}
 		return FALSE;
 	}
+	
 }
 
 ?>
