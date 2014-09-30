@@ -53,7 +53,7 @@ Formats supported by auto detection:
 - RAW S32 - A RAW number that may be negative to extend a 32-bit bitspace.
 - Vanity/Custom URL - e.g. "prayspray"
 - Full profile URL - "http://steamcommunity.com/profiles/765xxxxxx"
-- Full profile Custom URL - "http://steamcommunity.com/id/<customURL>"
+- Full profile Custom URL - "http://steamcommunity.com/id/[customURL]"
     
 Usage example:
 
