@@ -1,7 +1,9 @@
 SteamID Parser
 ===
 
-This is a simple PHP library to parse and format Steam IDs.
+This is a simple PHP library to parse and format Steam IDs. 
+
+Compatible with 32-bit PHP builds.
 
 Usage example:
 
