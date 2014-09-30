@@ -3,7 +3,6 @@
 /*!
  * SteamID Parser
  *
- * 
  * Copyright 2014 Mukunda Johnson
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -69,6 +68,7 @@ class SteamID {
 							// this is a raw steamid index that overflows
 							// into negative bitspace.
 	const FORMAT_RAW   = 5; // Raw index. like 64-bit minus the base value.
+	const FORMAT_VANITY= 6; // Vanity URL name. Forward conversion only.
 	
 	
 	const STEAMID64_BASE = '76561197960265728';
@@ -87,8 +87,8 @@ class SteamID {
 	 * @see http://steamcommunity.com/dev/apikey
 	 */
 	public static function SetSteamAPIKey( $key ) {
-		if( empty($key) ) $steam_api_key = FALSE;
-		$steam_api_key = $key;
+		if( empty($key) ) self::$steam_api_key = FALSE;
+		self::$steam_api_key = $key;
 	}
 	
 	/** -----------------------------------------------------------------------
@@ -107,7 +107,7 @@ class SteamID {
 	 * @param string $url URL to request.
 	 * @return string|false Contents of result or FALSE if the request failed.
 	 */
-	private function Curl( $url ) {
+	private static function Curl( $url ) {
 		
 		$ch = curl_init(); 
 		curl_setopt( $ch, CURLOPT_URL, $url );
@@ -126,11 +126,15 @@ class SteamID {
 	 * @param string $input Input to parse.
 	 * @param int $format   Input formatting, see FORMAT_ constants.
 	 *                      Defaults to FORMAT_AUTO which detects the format.  
+	 * @param bool $resolve_vanity Detect and resolve vanity URLs. (only used
+	 *                      with FORMAT_AUTO.
 	 *
 	 * @return SteamID|false SteamID instance or FALSE if the input is invalid 
 	 *                       or unsupported.
 	 */
-	public static function Parse( $input, $format = self::FORMAT_AUTO ) {
+	public static function Parse( $input, 
+									$format = self::FORMAT_AUTO, 
+									$resolve_vanity = false ) {
 		switch( $format ) {
 			
 			case self::FORMAT_32BIT:
@@ -211,6 +215,17 @@ class SteamID {
 				// sanity range check
 				if( bccomp( $input, self::MAX_VALUE, 0 ) > 0 ) return FALSE;
 				return new self( $input );
+				
+			case self::FORMAT_VANITY:
+			
+				// validate characters.
+				if( !preg_match( '/^[a-zA-Z0-9_-]{2,}$/', $input ) ) return FALSE;
+				
+				$result = self::ConvertVanityURL( $input );
+				if( $result !== FALSE ) {
+					$result->formatted[ self::FORMAT_VANITY ] = $input;
+					return $result;
+				}
 		}
 		
 		// Auto detect format:
@@ -222,10 +237,6 @@ class SteamID {
 		if( $result !== FALSE ) return $result;
 		$result = self::Parse( $input, self::FORMAT_V3 );
 		if( $result !== FALSE ) return $result;
-		$result = self::Parse( $input, self::FORMAT_S32 );
-		if( $result !== FALSE ) return $result;
-		$result = self::Parse( $input, self::FORMAT_RAW );
-		if( $result !== FALSE ) return $result;
 		
 		if( preg_match( 
 				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)$/',
@@ -234,14 +245,26 @@ class SteamID {
 			if( $result !== FALSE ) return $result;
 		}
 		
-		// TODO find out what characters are valid in customURLs.
-		if( preg_match( 
-				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/id\/([a-zA-Z0-9]+)$/',
-				$input, $matches ) ) {
-				
-			$result = self::ConvertVanityURL( $matches[1] );
+		if( $resolve_vanity ) {
+			
+			// try the name directly
+			$result = self::Parse( $input, self::FORMAT_VANITY );
 			if( $result !== FALSE ) return $result;
+			
+			// try a full URL.
+			if( preg_match( 
+					'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/id\/([a-zA-Z0-9_-]{2,})$/',
+					$input, $matches ) ) {
+					
+				$result = self::ConvertVanityURL( $matches[1] );
+				if( $result !== FALSE ) return $result;
+			}
 		}
+		
+		$result = self::Parse( $input, self::FORMAT_S32 );
+		if( $result !== FALSE ) return $result;
+		$result = self::Parse( $input, self::FORMAT_RAW );
+		if( $result !== FALSE ) return $result;
 		
 		// unknown stem
 		return FALSE;
@@ -258,10 +281,12 @@ class SteamID {
 	public static function ConvertVanityURL( $vanity_url_name ) {
 		if( empty($vanity_url_name) ) return FALSE;
 		
-		if( $steam_api_key !== FALSE ) {
-			$result = Curl( 
-				"http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=$steam_api_key&vanityurl=$vanity_url_name" );
-			if( $result === FALSE ) {
+		if( self::$steam_api_key !== FALSE ) {
+			$response = self::Curl( 
+				"http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key="
+				.self::$steam_api_key
+				."&vanityurl=$vanity_url_name" );
+			if( $response === FALSE ) {
 				throw new SteamIDResolutionException( 
 						SteamIDResolutionException::CURL_FAILURE,
 						'CURL Request Failed.' );
@@ -272,13 +297,15 @@ class SteamID {
 						SteamIDResolutionException::VANITYURL_FAILED,
 						'Steam failure.' );
 			}
-			
+			 
 			$response = json_decode( $response );
 			if( $response === FALSE ) {
 				throw new SteamIDResolutionException( 
 						SteamIDResolutionException::VANITYURL_FAILED,
 						'Steam failure.' );
 			}
+			
+			$response = $response->response;
 			
 			if( $response->success == 42 ) {
 				throw new SteamIDResolutionException( 
@@ -299,8 +326,7 @@ class SteamID {
 		} else {
 			// fallback to xml parsing method.
 			
-			$result = Curl( 
-				"http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=$steam_api_key&vanityurl=$vanity_url_name" );
+			$result = self::Curl( "http://steamcommunity.com/id/$vanity_url_name?xml=1" );
 			if( $result === FALSE ) {
 				throw new SteamIDResolutionException( 
 						SteamIDResolutionException::CURL_FAILURE,
@@ -312,16 +338,26 @@ class SteamID {
 			$indexes = array();
 			xml_parse_into_struct( $parser, $result, $values, $indexes );
 			xml_parser_free($parser);
-			$steamid = $indexes['STEAMID64'];
-			if( is_null( $steamid ) ) {
+			if( !isset( $indexes['STEAMID64'] ) || is_null( $indexes['STEAMID64'] ) ) {
+			
+				if( isset( $indexes['ERROR'] ) && 
+					trim($values[ $indexes['ERROR'][0] ]['value']) == 
+						'The specified profile could not be found.' ) {
+						
+					throw new SteamIDResolutionException( 
+						SteamIDResolutionException::VANITYURL_NOTFOUND,
+						'Vanity URL doesn\'t exist.' );
+				}
+			
 				throw new SteamIDResolutionException( 
 						SteamIDResolutionException::VANITYURL_FAILED,
 						'Invalid Vanity URL or Steam failure.' );
 			}
+			$steamid = $indexes['STEAMID64'];
 			$steamid = $values[ $steamid[0] ]['value'];
 		}
 		
-		return Parse( $steamid, self::FORMAT_64BIT );
+		return self::Parse( $steamid, self::FORMAT_64BIT );
 	}
 	
 	/** ----------------------------------------------------------------------- 

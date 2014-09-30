@@ -1,22 +1,24 @@
 <?php
 
+// oh man a testing thing
+
 require_once 'lib/steamid.php';
 
 header( 'Content-Type: text/plain' );
 
-//-----------------------------------------------------------------------------
+// ****************************************************************************
 function PrintLine( $text ) {
 	echo $text . "\r\n"; 
 	flush();
 }
-//-----------------------------------------------------------------------------
+// ****************************************************************************
 function PrintSubTest( $text ) {
 	echo "  $text" . "\r\n"; 
 	flush();
 }
 
 
-//-----------------------------------------------------------------------------
+// ****************************************************************************
 class Test {
 	public $name;
 	public $method;
@@ -33,7 +35,7 @@ class Test {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// ****************************************************************************
 final class Tests {
 
 	public static $tests = array();
@@ -63,9 +65,10 @@ final class Tests {
 		PrintLine( "---" );
 		PrintLine( "Running all tests." );
 		foreach( self::$tests as $test ) {
+			PrintLine( "" );
 			PrintLine( "\"$test->name\"" );
 			if( $test->Run() ) {
-				PrintLine( "Passed." );
+				PrintLine( "--- Passed. ---" );
 			} else {
 				PrintLine( "*** Failed! ***" );
 			}
@@ -77,7 +80,7 @@ final class Tests {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// ****************************************************************************
 Tests::Add( "Conversion Test", function() {
 	
 	PrintSubTest( "32-bit detect" );
@@ -173,7 +176,7 @@ Tests::Add( "Conversion Test", function() {
 	return TRUE;
 } );
 
-
+// ****************************************************************************
 Tests::Add( "Large SteamID conversions", function () {
 
 	for( $i = 0; $i < 255; $i++ ) {
@@ -208,9 +211,76 @@ Tests::Add( "Large SteamID conversions", function () {
 	
 	return TRUE;
 } );
- 
-bcscale( 32 );
 
+// ****************************************************************************
+function VanityTest() {
+
+	$buildname = function( $len ) {
+		$name = "";
+		for( $i = 0; $i < $len; $i++ ) {
+			$name .= chr( mt_rand( 97, 122 ) );
+		}
+		return $name;
+	};
+	PrintSubTest( "simple/direct" );
+	$steamid = SteamID::Parse( "prayspray", SteamID::FORMAT_AUTO, true );
+	if( $steamid === FALSE ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	
+	
+	for( $i = 0; $i < 20; $i++ ) {
+		$name = $buildname( $i );
+		
+		try {
+			$steamid = SteamID::Parse( $name, SteamID::FORMAT_AUTO, true );
+		} catch( SteamIDResolutionException $e ) {
+			switch( $e->reason ) {
+			case SteamIDResolutionException::UNKNOWN:
+				PrintSubTest( "failure: UNKNOWN. $name" );
+				PrintSubTest( $e->getMessage() );
+				return FALSE;
+			case SteamIDResolutionException::CURL_FAILURE:
+				PrintSubTest( "CURL_FAILURE $name" );
+				PrintSubTest( $e->getMessage() );
+				return FALSE;
+			case SteamIDResolutionException::VANITYURL_NOTFOUND:
+				// normal operation
+				continue;
+			case SteamIDResolutionException::VANITYURL_FAILED:
+				PrintSubTest( "STEAM FAILURE $name" );
+				PrintSubTest( $e->getMessage() );
+				return FALSE;
+			}
+		}
+	}
+	return TRUE;
+}
+
+// ****************************************************************************
+Tests::Add( "VanityURL Resolution via XML", function () {
+	
+	return VanityTest();
+	
+} );
+
+// ****************************************************************************
+Tests::Add( "VanityURL Resolution via Steam API", function () {
+	$steamapikey = file_get_contents( "steamapikey" );
+	if($steamapikey=="") {
+		PrintSubTest( 
+"Steam API Key missing, please create a file called 
+\"steamapikey\" and set the contents to your Steam API key!" );
+		PrintSubTest( "http://steamcommunity.com/dev/apikey" );
+		return FALSE;
+	}
+
+	SteamID::SetSteamAPIKey( $steamapikey );
+	
+	return VanityTest();
+} );
+
+// ****************************************************************************
+bcscale( 32 );
 Tests::Run();
 
 ?>
