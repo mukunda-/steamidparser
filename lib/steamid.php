@@ -53,7 +53,7 @@ class SteamIDResolutionException extends Exception {
 class SteamID {
 	
 	private $value;     // RAW value as a string.
-	private $converted; // array of converted values.
+	public $formatted;  // array of converted values.
 	
 	const FORMAT_AUTO  = 0; // Auto-detect format --- this also supports other
 							// unlisted formats such as profile URLs.
@@ -66,13 +66,13 @@ class SteamID {
 	const FORMAT_RAW   = 5; // Raw index. like 64-bit minus the base value.
 	
 	
-	private STEAMID64_BASE = '76561197960265728';
+	const STEAMID64_BASE = '76561197960265728';
 	
 	// max allowed value. (sanity check)
 	// 2^36; update this in approx 2,400,000 years
 	const MAX_VALUE = '68719476736';
 	
-	private static steam_api_key = FALSE;
+	private static $steam_api_key = FALSE;
 	
 	/** -----------------------------------------------------------------------
 	 * Set an API key to use for resolving Custom URLs. If this isn't set
@@ -91,9 +91,9 @@ class SteamID {
 	 *
 	 * @param string $raw Raw value of Steam ID.
 	 */
-	private __construct( $raw ) {
+	private function __construct( $raw ) {
 		$this->value = $raw;
-		$this->converted[ FORMAT_RAW ] = $raw;
+		$this->formatted[ self::FORMAT_RAW ] = $raw;
 	}
 	
 	/** -----------------------------------------------------------------------
@@ -125,81 +125,87 @@ class SteamID {
 	 * @return SteamID|false SteamID instance or FALSE if the input is invalid 
 	 *                       or unsupported.
 	 */
-	public static function Parse( $input, $format = FORMAT_AUTO ) {
-		if( $format == FORMAT_32BIT ) {
-		
-			// validate STEAM_0/1:y:zzzzzz
-			if( !preg_match( 
-					'/^STEAM_[0-1]:([0-1]):([0-9]+)$/', 
-					$input, $matches ) ) {
-					
-				return FALSE;
-			}
+	public static function Parse( $input, $format = self::FORMAT_AUTO ) {
+		switch( $format ) {
 			
-			// convert to raw.
-			$a = bcmul( $matches[2], 2 );
-			$a = bcadd( $a, $matches[1] );
+			case self::FORMAT_32BIT:
 			
-			$result = new self( $a );
-			$result->converted[ self::FORMAT_32BIT ] = $input;
-			return $result;
-		} else if( $format == self::FORMAT_64BIT ) {
-		
-			// allow digits only
-			if( !preg_match( '/^[0-9]+$/', $input ) ) return FALSE;
+				// validate STEAM_0/1:y:zzzzzz
+				if( !preg_match( 
+						'/^STEAM_[0-1]:([0-1]):([0-9]+)$/', 
+						$input, $matches ) ) {
+						
+					return FALSE;
+				}
+				
+				// convert to raw.
+				$a = bcmul( $matches[2], '2' );
+				$a = bcadd( $a, $matches[1] );
+				
+				$result = new self( $a );
+				$result->formatted[ self::FORMAT_32BIT ] = $input;
+				return $result;
+				
+			case self::FORMAT_64BIT:
 			
-			// convert to raw (subtract base)
-			$a = bcsub( $input, self::STEAMID64_BASE );
+				// allow digits only
+				if( !preg_match( '/^[0-9]+$/', $input ) ) return FALSE;
+				
+				// convert to raw (subtract base)
+				$a = bcsub( $input, self::STEAMID64_BASE );
+				
+				// sanity range check.
+				if( bccomp( $a, '0' ) < 0 ) return FALSE;
+				if( bccomp( $a, self::MAX_VALUE ) > 0 ) return FALSE;
+				
+				$result = new self( $a );
+				$result->formatted[ self::FORMAT_64BIT ] = $input;
+				return $result;
+				
+			case self::FORMAT_V3:
 			
-			// sanity range check.
-			if( bccomp( $a, 0 ) < 0 ) return FALSE;
-			if( bccomp( $a, self::MAX_VALUE ) > 0 ) return FALSE
+				// validate [U:1:xxxxxx]
+				if( !preg_match( '/^\[U:1:([0-9]+)\]$/', $input, $matches ) ) {
+					return FALSE;
+				}
+				
+				$a = $matches[1];
+				
+				// sanity range check.
+				if( bccomp( $a, self::MAX_VALUE ) > 0 ) return FALSE;
+				$result = new self( $a );
+				$result->formatted[ self::FORMAT_V3 ] = $input;
+				return $result;
+				
+			case self::FORMAT_S32:
+				
+				// validate signed 32-bit format
+				if( !preg_match( '/^(-?[0-9]+)$/', $input ) ) {
+					return FALSE;
+				}
+				
+				$a = $input;
+				
+				// 32-bit range check
+				if( bccomp( $a, '2147483647' ) > 0 ) return FALSE;
+				if( bccomp( $a, '-2147483648' ) < 0 ) return FALSE;
+				if( bccomp( $a, '0' ) < 0 ) {
+					$a = bcadd( $a, '4294967296' );
+				}
+				$result = new self( $a );
+				$result->formatted[ self::FORMAT_S32 ] = $input;
+				return $result;
+				
+			case self::FORMAT_RAW:
 			
-			$result = new self( $a );
-			$result->converted[ self::FORMAT_64BIT ] = $input;
-			return $result;
-		} else if( $format == self::FORMAT_V3 ) {
-		
-			// validate [U:1:xxxxxx]
-			if( !preg_match( '/^[U:1:([0-9]+)]$/', $input, $matches ) ) {
-				return FALSE;
-			}
-			
-			$a = $matches[1];
-			
-			// sanity range check.
-			if( bccomp( $a, self::MAX_VALUE ) > 0 ) return FALSE;
-			$result = new self( $a );
-			$result->converted[ self::FORMAT_V3 ] = $input;
-			return $result;
-		} else if( $format == self::FORMAT_S32 ) {
-			
-			// validate signed 32-bit format
-			if( !preg_match( '/^(-?[0-9]+)$/', $input ) ) {
-				return FALSE;
-			}
-			
-			$a = $input;
-			
-			// 32-bit range check
-			if( bccomp( $a, '2147483647' ) > 0 ) return FALSE;
-			if( bccomp( $a, '-2147483648' ) < 0 ) return FALSE;
-			if( bccomp( $a, '0' ) < 0 ) {
-				$a = bcadd( $a, '4294967296' );
-			}
-			$result = new self( $a );
-			$result->converted[ self::FORMAT_S32 ] = $input;
-			return $result;
-		} else if( $format == self::FORMAT_RAW ) {
-		
-			// validate digits only
-			if( !preg_match( '/^[0-9]+$/', $input ) ) {
-				return FALSE;
-			}
-			
-			// sanity range check
-			if( bccomp( $input, self::MAX_VALUE ) > 0 ) return FALSE;
-			return new self( $input );
+				// validate digits only
+				if( !preg_match( '/^[0-9]+$/', $input ) ) {
+					return FALSE;
+				}
+				
+				// sanity range check
+				if( bccomp( $input, self::MAX_VALUE ) > 0 ) return FALSE;
+				return new self( $input );
 		}
 		
 		// Auto detect format:
@@ -310,7 +316,55 @@ class SteamID {
 			$steamid = $values[ $steamid[0] ]['value'];
 		}
 		
-		return Parse( $steamid, 
+		return Parse( $steamid, self::FORMAT_64BIT );
+	}
+	
+	/** ----------------------------------------------------------------------- 
+	 * Format this SteamID to a string.
+	 *
+	 * @param int $format Output format. See FORMAT_xxx constants.
+	 * @return string|false Formatted Steam ID. FALSE if an invalid format is
+	 *                      given or the desired format cannot contain the 
+	 *                      SteamID.
+	 */
+	public function Format( $format ) {
+		if( isset( $this->formatted[$format] ) ) {
+			return $this->formatted[$format];
+		}
+		
+		switch( $format ) {
+			case self::FORMAT_32BIT:
+				$z = bcdiv( $this->value, '2', 0 );
+				$y = bcmul( $z, '2' );
+				$y = bcsub( $this->value, $y );
+				$formatted = "STEAM_1:$y:$z";
+				$this->formatted[$format] = $formatted;
+				return $formatted;
+				
+			case self::FORMAT_64BIT:
+				$formatted = bcadd( $this->value, self::STEAMID64_BASE );
+				$this->formatted[$format] = $formatted;
+				return $formatted;
+				
+			case self::FORMAT_V3:
+				$formatted = "[U:1:$this->value]";
+				$this->formatted[$format] = $formatted;
+				return $formatted;
+				
+			case self::FORMAT_S32:
+				if( bccomp( $this->value, '4294967296' ) >= 0 ) {
+					return FALSE; // too large for s32.
+				}
+				
+				if( bccomp( $this->value, '2147483648' ) >= 0 ) {
+					$formatted = bcsub( $this->value, '4294967296' );
+				} else {
+					$formatted = $this->value;
+				}
+				$this->formatted[$format] = $formatted;
+				return $formatted;
+		}
+		return FALSE;
 	}
 }
 
