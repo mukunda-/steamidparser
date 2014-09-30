@@ -87,24 +87,24 @@ Tests::Add( "Conversion Test", function() {
 	$steamid = SteamID::Parse( " STEAM_1:1:54499221 " );
 	if( $steamid === FALSE ) return FALSE;
 	PrintSubTest( "32-bit direct" );
-	$steamid = SteamID::Parse( "STEAM_0:1:54499221", SteamID::FORMAT_32BIT );
+	$steamid = SteamID::Parse( "STEAM_0:1:54499221", SteamID::FORMAT_STEAMID32 );
 	if( $steamid === FALSE ) return FALSE;
 	PrintSubTest( "32-bit as 64 error" );
-	$steamid = SteamID::Parse( "STEAM_1:1:54499221", SteamID::FORMAT_64BIT );
+	$steamid = SteamID::Parse( "STEAM_1:1:54499221", SteamID::FORMAT_STEAMID64 );
 	if( $steamid !== FALSE ) return FALSE;
 	
 	PrintSubTest( "64-bit detect" );
 	$steamid = SteamID::Parse( "76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "64-bit direct" );
-	$steamid = SteamID::Parse( "76561198069264171", SteamID::FORMAT_64BIT );
+	$steamid = SteamID::Parse( "76561198069264171", SteamID::FORMAT_STEAMID64 );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "64-bit errornous" );
-	$steamid = SteamID::Parse( "76533611981069263334171", SteamID::FORMAT_64BIT );
+	$steamid = SteamID::Parse( "76533611981069263334171", SteamID::FORMAT_STEAMID64 );
 	if( $steamid !== FALSE ) return FALSE;
 	
 	PrintSubTest( "64-bit as raw" );
@@ -114,44 +114,44 @@ Tests::Add( "Conversion Test", function() {
 	PrintSubTest( "v3 detect" );
 	$steamid = SteamID::Parse( "[U:1:108998443]" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "v3 direct" );
-	$steamid = SteamID::Parse( "[U:1:108998443]", SteamID::FORMAT_V3 );
+	$steamid = SteamID::Parse( "[U:1:108998443]", SteamID::FORMAT_STEAMID3 );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "s32 detect" );
 	$steamid = SteamID::Parse( "108998443" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "s32 direct" );
 	$steamid = SteamID::Parse( "108998443", SteamID::FORMAT_S32 );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "raw direct" );
 	$steamid = SteamID::Parse( "108998443", SteamID::FORMAT_RAW );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "community URL 1" );
 	$steamid = SteamID::Parse( "http://www.steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	PrintSubTest( "community URL 2" );
 	$steamid = SteamID::Parse( "http://steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	PrintSubTest( "community URL 3" );
 	$steamid = SteamID::Parse( "www.steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	PrintSubTest( "community URL 4" );
 	$steamid = SteamID::Parse( "steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	PrintSubTest( "random conversions..." );
 	for( $i = 0; $i < 5000; $i++ ) {
@@ -225,7 +225,7 @@ function VanityTest() {
 	PrintSubTest( "simple/direct" );
 	$steamid = SteamID::Parse( "prayspray", SteamID::FORMAT_AUTO, true );
 	if( $steamid === FALSE ) return FALSE;
-	if( $steamid->Format( SteamID::FORMAT_32BIT ) != "STEAM_1:1:54499221" ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
 	
 	for( $i = 0; $i < 20; $i++ ) {

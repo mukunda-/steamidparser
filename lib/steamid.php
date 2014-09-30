@@ -59,16 +59,21 @@ class SteamID {
 	// by Format or Parse.
 	public $formatted;
 	
-	const FORMAT_AUTO  = 0; // Auto-detect format --- this also supports other
-							// unlisted formats such as profile URLs.
-	const FORMAT_32BIT = 1; // Classic STEAM_x:y:zzzzzz | x = 0/1
-	const FORMAT_64BIT = 2; // SteamID64: 7656119xxxxxxxxxx
-	const FORMAT_V3    = 3; // SteamID3 format: [U:1:xxxxxx]
-	const FORMAT_S32   = 4; // Raw 32-bit SIGNED format. 
-							// this is a raw steamid index that overflows
-							// into negative bitspace.
-	const FORMAT_RAW   = 5; // Raw index. like 64-bit minus the base value.
-	const FORMAT_VANITY= 6; // Vanity URL name. Forward conversion only.
+	const FORMAT_AUTO  = 0;     // Auto-detect format --- this also supports 
+								// other unlisted formats such as 
+								// full profile URLs.
+	const FORMAT_STEAMID32 = 1; // Classic STEAM_x:y:zzzzzz | x = 0/1
+	const FORMAT_STEAMID64 = 2; // SteamID64: 7656119xxxxxxxxxx
+	const FORMAT_STEAMID3  = 3; // SteamID3 format: [U:1:xxxxxx]
+	const FORMAT_S32       = 4; // Raw 32-bit SIGNED format. 
+							    // this is a raw steamid index that overflows
+							    // into negative bitspace.
+								// This is the format that SourceMod returns
+								// with GetSteamAccountID, and will always
+								// fit into a 32-bit signed variable. (e.g.
+								// a 32-bit PHP integer).
+	const FORMAT_RAW       = 5; // Raw index. like 64-bit minus the base value.
+	const FORMAT_VANITY    = 6; // Vanity URL name. Forward conversion only.
 	
 	
 	const STEAMID64_BASE = '76561197960265728';
@@ -137,7 +142,7 @@ class SteamID {
 									$resolve_vanity = false ) {
 		switch( $format ) {
 			
-			case self::FORMAT_32BIT:
+			case self::FORMAT_STEAMID32:
 			
 				// validate STEAM_0/1:y:zzzzzz
 				if( !preg_match( 
@@ -152,10 +157,10 @@ class SteamID {
 				$a = bcadd( $a, $matches[1], 0 );
 				
 				$result = new self( $a );
-				$result->formatted[ self::FORMAT_32BIT ] = $input;
+				$result->formatted[ self::FORMAT_STEAMID32 ] = $input;
 				return $result;
 				
-			case self::FORMAT_64BIT:
+			case self::FORMAT_STEAMID64:
 			
 				// allow digits only
 				if( !preg_match( '/^[0-9]+$/', $input ) ) return FALSE;
@@ -168,10 +173,10 @@ class SteamID {
 				if( bccomp( $a, self::MAX_VALUE, 0 ) > 0 ) return FALSE;
 				
 				$result = new self( $a );
-				$result->formatted[ self::FORMAT_64BIT ] = $input;
+				$result->formatted[ self::FORMAT_STEAMID64 ] = $input;
 				return $result;
 				
-			case self::FORMAT_V3:
+			case self::FORMAT_STEAMID3:
 			
 				// validate [U:1:xxxxxx]
 				if( !preg_match( '/^\[U:1:([0-9]+)\]$/', $input, $matches ) ) {
@@ -183,7 +188,7 @@ class SteamID {
 				// sanity range check.
 				if( bccomp( $a, self::MAX_VALUE, 0 ) > 0 ) return FALSE;
 				$result = new self( $a );
-				$result->formatted[ self::FORMAT_V3 ] = $input;
+				$result->formatted[ self::FORMAT_STEAMID3 ] = $input;
 				return $result;
 				
 			case self::FORMAT_S32:
@@ -231,17 +236,17 @@ class SteamID {
 		// Auto detect format:
 		
 		$input = trim( $input );
-		$result = self::Parse( $input, self::FORMAT_32BIT );
+		$result = self::Parse( $input, self::FORMAT_STEAMID32 );
 		if( $result !== FALSE ) return $result;
-		$result = self::Parse( $input, self::FORMAT_64BIT );
+		$result = self::Parse( $input, self::FORMAT_STEAMID64 );
 		if( $result !== FALSE ) return $result;
-		$result = self::Parse( $input, self::FORMAT_V3 );
+		$result = self::Parse( $input, self::FORMAT_STEAMID3 );
 		if( $result !== FALSE ) return $result;
 		
 		if( preg_match( 
 				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)$/',
 				$input, $matches ) ) {
-			$result = self::Parse( $matches[1], self::FORMAT_64BIT );
+			$result = self::Parse( $matches[1], self::FORMAT_STEAMID64 );
 			if( $result !== FALSE ) return $result;
 		}
 		
@@ -357,7 +362,7 @@ class SteamID {
 			$steamid = $values[ $steamid[0] ]['value'];
 		}
 		
-		return self::Parse( $steamid, self::FORMAT_64BIT );
+		return self::Parse( $steamid, self::FORMAT_STEAMID64 );
 	}
 	
 	/** ----------------------------------------------------------------------- 
@@ -374,7 +379,7 @@ class SteamID {
 		}
 		
 		switch( $format ) {
-			case self::FORMAT_32BIT:
+			case self::FORMAT_STEAMID32:
 				$z = bcdiv( $this->value, '2', 0 );
 				$y = bcmul( $z, '2', 0 );
 				$y = bcsub( $this->value, $y, 0 );
@@ -382,12 +387,12 @@ class SteamID {
 				$this->formatted[$format] = $formatted;
 				return $formatted;
 				
-			case self::FORMAT_64BIT:
+			case self::FORMAT_STEAMID64:
 				$formatted = bcadd( $this->value, self::STEAMID64_BASE, 0 );
 				$this->formatted[$format] = $formatted;
 				return $formatted;
 				
-			case self::FORMAT_V3:
+			case self::FORMAT_STEAMID3:
 				$formatted = "[U:1:$this->value]";
 				$this->formatted[$format] = $formatted;
 				return $formatted;
