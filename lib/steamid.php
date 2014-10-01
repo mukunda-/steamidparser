@@ -133,13 +133,16 @@ class SteamID {
 	 *                      Defaults to FORMAT_AUTO which detects the format.  
 	 * @param bool $resolve_vanity Detect and resolve vanity URLs. (only used
 	 *                      with FORMAT_AUTO.
+	 * @param bool $detect_raw Detect and parse RAW values. (only used with
+	 *                      FORMAT_AUTO.
 	 *
 	 * @return SteamID|false SteamID instance or FALSE if the input is invalid 
 	 *                       or unsupported.
 	 */
 	public static function Parse( $input, 
 									$format = self::FORMAT_AUTO, 
-									$resolve_vanity = false ) {
+									$resolve_vanity = false,
+									$detect_raw = false ) {
 		switch( $format ) {
 			
 			case self::FORMAT_STEAMID32:
@@ -266,10 +269,12 @@ class SteamID {
 			}
 		}
 		
-		$result = self::Parse( $input, self::FORMAT_S32 );
-		if( $result !== FALSE ) return $result;
-		$result = self::Parse( $input, self::FORMAT_RAW );
-		if( $result !== FALSE ) return $result;
+		if( $detect_raw ) {
+			$result = self::Parse( $input, self::FORMAT_S32 );
+			if( $result !== FALSE ) return $result;
+			$result = self::Parse( $input, self::FORMAT_RAW );
+			if( $result !== FALSE ) return $result;
+		}
 		
 		// unknown stem
 		return FALSE;
