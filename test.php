@@ -1,10 +1,12 @@
 <?php
 
-// oh man a testing thing
+// oh baby a testing thing
 
 require_once 'lib/steamid.php';
 
 header( 'Content-Type: text/plain' );
+
+SteamID::SetParseRawDefault(true);
 
 // ****************************************************************************
 function PrintLine( $text ) {
