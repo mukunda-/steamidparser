@@ -83,6 +83,8 @@ class SteamID {
 	const MAX_VALUE = '68719476736';
 	
 	private static $steam_api_key = FALSE;
+	private static $default_detect_raw = FALSE;
+	private static $default_resolve_vanity = FALSE;
 	
 	/** -----------------------------------------------------------------------
 	 * Set an API key to use for resolving Custom URLs. If this isn't set
@@ -94,6 +96,25 @@ class SteamID {
 	public static function SetSteamAPIKey( $key ) {
 		if( empty($key) ) self::$steam_api_key = FALSE;
 		self::$steam_api_key = $key;
+	}
+	
+	/** -----------------------------------------------------------------------
+	 * Set the default setting for $detect_raw for Parse()
+	 *
+	 * @param bool $parseraw Default $detect_raw value, see Parse function.
+	 */
+	public static function SetParseRawDefault( $parseraw ) {
+		self::$default_detect_raw = $parseraw;
+	}
+	
+	/** -----------------------------------------------------------------------
+	 * Set the default setting for $resolve_vanity for Parse()
+	 *
+	 * @param bool $resolve_vanity Default $resolve_vanity value, 
+	 *                             see Parse function.
+	 */
+	public static function SetResolveVanityDefault( $resolve_vanity ) {
+		self::$default_resolve_vanity = $parseraw;
 	}
 	
 	/** -----------------------------------------------------------------------
@@ -132,17 +153,27 @@ class SteamID {
 	 * @param int $format   Input formatting, see FORMAT_ constants.
 	 *                      Defaults to FORMAT_AUTO which detects the format.  
 	 * @param bool $resolve_vanity Detect and resolve vanity URLs. (only used
-	 *                      with FORMAT_AUTO.
+	 *                      with FORMAT_AUTO. Default option set with 
+	 *                      SetParseRawDefault.
 	 * @param bool $detect_raw Detect and parse RAW values. (only used with
-	 *                      FORMAT_AUTO.
+	 *                      FORMAT_AUTO. e.g "123" will resolve to the
+	 *                      SteamID with the raw value 123, and not a
+	 *                      vanity-url named "123". Default option set with
+	 *                      SetResolveVanityDefault.
 	 *
 	 * @return SteamID|false SteamID instance or FALSE if the input is invalid 
 	 *                       or unsupported.
 	 */
 	public static function Parse( $input, 
 									$format = self::FORMAT_AUTO, 
-									$resolve_vanity = false,
-									$detect_raw = false ) {
+									$resolve_vanity = null,
+									$detect_raw = null ) {
+									
+		if( $detect_raw === null ) 
+			$detect_raw = self::$default_detect_raw;
+		if( $resolve_vanity === null )
+			$resolve_vanity = self::$default_resolve_vanity;
+		
 		switch( $format ) {
 			
 			case self::FORMAT_STEAMID32:
