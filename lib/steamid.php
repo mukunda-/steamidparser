@@ -154,12 +154,12 @@ class SteamID {
 	 *                      Defaults to FORMAT_AUTO which detects the format.  
 	 * @param bool $resolve_vanity Detect and resolve vanity URLs. (only used
 	 *                      with FORMAT_AUTO. Default option set with 
-	 *                      SetParseRawDefault.
+	 *                      SetResolveVanityDefault.
 	 * @param bool $detect_raw Detect and parse RAW values. (only used with
 	 *                      FORMAT_AUTO. e.g "123" will resolve to the
 	 *                      SteamID with the raw value 123, and not a
 	 *                      vanity-url named "123". Default option set with
-	 *                      SetResolveVanityDefault.
+	 *                      SetParseRawDefault.
 	 *
 	 * @return SteamID|false SteamID instance or FALSE if the input is invalid 
 	 *                       or unsupported.
