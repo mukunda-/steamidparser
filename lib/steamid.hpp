@@ -27,7 +27,6 @@
 #define _STEAMID_
 
 #include <string>
-#include <regex>
 #include <cctype>
 
 /** ---------------------------------------------------------------------------
@@ -98,15 +97,18 @@ public:
 			//-----------------------------------------------------------------
 			case Formats::STEAMID32: {
 				
-				// quick check.
-				if( input[0] != 'S' ) return SteamID();
+				// regex is slow as fuck for some reason.
+				if( input.size() < 11  || input[0] != 'S' || input[1] != 'T' 
+					|| input[2] != 'E' || input[3] != 'A' || input[4] != 'M'
+					|| input[5] != '_' || !Is01(input,6)  || input[7] != ':'
+					|| !Is01(input,8)  || input[9] != ':' ) return SteamID();
 
 				// STEAM_X:Y:Z'
-				static const std::regex r( 
-					R"--(^STEAM_[0-1]:[0-1]:[0-9]+$)--", 
-					rc::icase | rc::optimize );
-
-				if( !std::regex_match( input, r ) ) return SteamID();
+//				static const std::regex r( 
+//					R"--(^STEAM_[0-1]:[0-1]:[0-9]+$)--", 
+//					rc::icase | rc::optimize );
+//
+//				if( !std::regex_match( input, r ) ) return SteamID();
 
 				bigint z = std::stoll( input.substr( 10 ) );
 				z = (z << 1) + (input[8] - '0');
@@ -129,13 +131,19 @@ public:
 			//-----------------------------------------------------------------
 			} case Formats::STEAMID3: {
 			
-				// quick check because std::regex is slow as FUCK.
-				if( input[0] != '[' ) return SteamID();
-
 				// [U:1:xxxxxx]
-				static const std::regex r( R"--(^\[U:1:[0-9]+\]$)--", 
-						rc::optimize );
-				if( !std::regex_match( input, r ) ) return SteamID();
+				if( input.size() < 7   || input[0] != '[' || input[1] != 'U'
+					|| input[2] != ':' || input[3] != '1' || input[4] != ':'
+					|| input[input.size()-1] != ']' 
+					|| !IsDigits( input, 5, input.size() - 1 - 5 ) ) {
+					
+					return SteamID();
+				}
+
+				// slow.
+//				static const std::regex r( R"--(^\[U:1:[0-9]+\]$)--", 
+//						rc::optimize );
+//				if( !std::regex_match( input, r ) ) return SteamID();
 				
 				SteamID result( std::stoll( 
 						input.substr( 5, input.size() - 1 - 5 )));
@@ -183,17 +191,18 @@ public:
 		result = Parse( cleaned, Formats::STEAMID3 );
 		if( *result ) return result;
 		
-		if( input[0] == 'h' || input[0] == 'w' || input[0] == 's' ) {
-			static const std::regex r_url( 
-				R"--(^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)$)--",
-				rc::icase | rc::optimize );
+		result = TryConvertProfileURL( cleaned );
+		if( *result ) return result;
+			
+	//		static const std::regex r_url( 
+	//			R"--(^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)$)--",
+	//			rc::icase | rc::optimize );
 
-			std::smatch matches;
-			if( std::regex_match( cleaned, matches, r_url ) ) {
-				result = Parse( matches[1], Formats::STEAMID64  );
-				if( *result ) return result;
-			} 
-		}
+	//		std::smatch matches;
+	//		if( std::regex_match( cleaned, matches, r_url ) ) {
+	//			result = Parse( matches[1], Formats::STEAMID64  );
+	//			if( *result ) return result;
+	//		} 
 		
 		if( detect_raw ) {
 			result = Parse( input, Formats::S32 );
@@ -342,6 +351,11 @@ private:
 	} 
 
 	//-------------------------------------------------------------------------
+	static bool Is01( const std::string &str, size_t index ) {
+		return str[index] == '0' || str[index] == '1';
+	}
+
+	//-------------------------------------------------------------------------
 	static std::string TrimString( const std::string &input ) {
 		
 		int start = 0, end = (int)input.size()-1;
@@ -357,6 +371,56 @@ private:
 		}
 		
 		return input.substr( start, 1+end-start );
+	}
+
+	//-------------------------------------------------------------------------
+	static SteamID TryConvertProfileURL( std::string &str ) {
+		if( str[0] != 'h' && str[0] != 'w' && str[0] != 's' ) return SteamID();
+
+		int lastslash = str.find_last_of( '/' );
+		if( lastslash == std::string::npos ) return SteamID();
+		if( lastslash == str.size()-1 ) {
+			str.pop_back();
+			lastslash = str.find_last_of( '/' );
+			if( lastslash == std::string::npos ) return SteamID();
+		}
+
+		if( CheckProfilePrefix( str, lastslash ) ) {
+			return Parse( str.substr( lastslash+1 ) );
+		}
+		return SteamID();
+	}
+
+	static bool CheckProfilePrefix( std::string &str, int end ) {
+		// possible prefixes:
+		// 0123456789012345678901234567890123456789
+		// https://www.steamcommunity.com/profiles/
+		// http://www.steamcommunity.com/profiles/
+		// https://steamcommunity.com/profiles/
+		// http://steamcommunity.com/profiles/
+		// www.steamcommunity.com/profiles/
+		// steamcommunity.com/profiles/
+
+		if( end == 39 ) {
+			return str.compare( 0, 1+end, 
+					"https://www.steamcommunity.com/profiles/" ) == 0;
+		} else if( end == 38 ) {
+			return str.compare( 0, 1+end, 
+					"http://www.steamcommunity.com/profiles/" ) == 0;
+		} else if( end == 35 ) {
+			return str.compare( 0, 1+end, 
+					"https://steamcommunity.com/profiles/" ) == 0;
+		} else if( end == 34 ) {
+			return str.compare( 0, 1+end, 
+					"http://steamcommunity.com/profiles/" ) == 0;
+		} else if( end == 31 ) {
+			return str.compare( 0, 1+end, 
+					"www.steamcommunity.com/profiles/" ) == 0;
+		} else if( end == 27 ) {
+			return str.compare( 0, 1+end, 
+					"steamcommunity.com/profiles/" ) == 0;
+		}
+		return false;
 	}
 };
 

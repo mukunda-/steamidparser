@@ -47,7 +47,8 @@ public:
 		auto begin = std::chrono::high_resolution_clock::now();
 		for( auto & test: tests ) {
 			PrintLine( "" );
-			PrintLine( "\"$test->name\"" );
+			std::cout << '"' << test.m_name << '"' << std::endl;
+			
 			if( test() ) {
 				PrintLine( "--- Passed. ---" );
 			} else {
