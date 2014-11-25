@@ -36,8 +36,7 @@ C++ usage example:
     ...
     
     // parse a Steam ID in "SteamID3" format.
-    SteamID steamid = SteamID::Parse( 
-            "[U:1:108998443]", SteamID::Formats::STEAMID3 );
+    SteamID steamid( "[U:1:108998443]", SteamID::Formats::STEAMID3 );
     
     // print it in SteamID32 format
     std::cout << steamid[ SteamID::Formats::STEAMID32 ];

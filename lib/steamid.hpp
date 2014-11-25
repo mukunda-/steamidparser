@@ -310,6 +310,14 @@ public:
 	bigint To64() {
 		return m_value + STEAMID64_BASE;
 	}
+
+	/** -----------------------------------------------------------------------
+	 * Parsing shortcut.
+	 */
+	SteamID( const std::string &input, Formats format = Formats::AUTO,
+			 int detect_raw = ParseRawDefault() ) 
+			 : SteamID( Parse( input, format, detect_raw )) {
+	}
 	
 	/** -----------------------------------------------------------------------
 	 * Construct a Steam ID.
