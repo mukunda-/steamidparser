@@ -445,6 +445,8 @@ class SteamID {
 				}
 				$this->formatted[$format] = $formatted;
 				return $formatted;
+				
+			// (raw is always cached)
 		}
 		return FALSE;
 	}
