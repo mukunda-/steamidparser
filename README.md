@@ -40,7 +40,7 @@ C++ usage example:
             "[U:1:108998443]", SteamID::Formats::STEAMID3 );
     
     // print it in SteamID32 format
-    std::cout << steamid::Format( SteamID::Formats::STEAMID32 );
+    std::cout << steamid.Format( SteamID::Formats::STEAMID32 );
     
     // (prints "STEAM_1:1:54499221")
     
