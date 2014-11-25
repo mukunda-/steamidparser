@@ -1,7 +1,7 @@
 SteamID Parser
 ===
 
-This is a simple library for PHP and JavaScript to parse and format Steam IDs. 
+This is a simple library for PHP, JavaScript, and C++ to parse and format Steam IDs. 
 
 Compatible with 32-bit PHP builds.
 
@@ -27,6 +27,20 @@ JavaScript usage example (after referencing the library):
     
     // print it in SteamID32 format
     console.log( steamid.Format( SteamID.Format.STEAMID32 ) );
+    
+    // (prints "STEAM_1:1:54499221")
+    
+C++ usage example:
+
+    #include <steamid.hpp>
+    ...
+    
+    // parse a Steam ID in "SteamID3" format.
+    SteamID steamid = SteamID::Parse( 
+            "[U:1:108998443]", SteamID::Formats::STEAMID3 );
+    
+    // print it in SteamID32 format
+    std::cout << steamid::Format( SteamID::Formats::STEAMID32 );
     
     // (prints "STEAM_1:1:54499221")
     
