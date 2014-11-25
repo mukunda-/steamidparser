@@ -1,4 +1,4 @@
-#include "stdafx.h"
+
 // oh baby a testing thing
 
 #include <iostream>
