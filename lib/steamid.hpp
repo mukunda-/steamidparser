@@ -159,8 +159,7 @@ public:
 					return SteamID();
 				}
 			
-				bigint a = std::stoll( input ); 
-				 
+				bigint a = std::stoll( input );
 				if( a < 0 ) a += 4294967296L;
 
 				SteamID result( a );
@@ -309,6 +308,23 @@ public:
 	 */
 	bigint To64() {
 		return m_value + STEAMID64_BASE;
+	}
+	
+	/** -----------------------------------------------------------------------
+	 * Get raw value, same as operator*.
+	 */
+	bigint ToRaw() {
+		return m_value;
+	}
+
+	/** -----------------------------------------------------------------------
+	 * Get 32-bit value cast to signed.
+	 */
+	int ToS32() {
+		if( m_value > 0xFFFFFFFF ) {
+			return 0;
+		}
+		return (int)m_value;
 	}
 
 	/** -----------------------------------------------------------------------
