@@ -89,8 +89,6 @@ public:
 		
 		if( input.empty() ) return SteamID(); // no input...
 
-		namespace rc = std::regex_constants;
-
 		try {
 			switch( format ) {
 			
