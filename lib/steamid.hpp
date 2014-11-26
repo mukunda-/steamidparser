@@ -39,7 +39,7 @@
 class SteamID {
 
 public:
-	enum class Formats : int {
+    enum class Formats {
 		AUTO = 0,		// Auto-detect format --- this also supports 
 						// other unlisted formats such as 
 						// full profile URLs.
