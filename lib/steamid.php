@@ -114,7 +114,7 @@ class SteamID {
 	 *                             see Parse function.
 	 */
 	public static function SetResolveVanityDefault( $resolve_vanity ) {
-		self::$default_resolve_vanity = $parseraw;
+		self::$default_resolve_vanity = $resolve_vanity;
 	}
 	
 	/** -----------------------------------------------------------------------
