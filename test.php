@@ -142,14 +142,25 @@ Tests::Add( "Conversion Test", function() {
 	$steamid = SteamID::Parse( "http://www.steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
 	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	
+	PrintSubTest( "community URL 1 Trailing Slashes" );
+	$steamid = SteamID::Parse( "http://www.steamcommunity.com/profiles/76561198069264171/" );
+	if( $steamid === FALSE ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	$steamid = SteamID::Parse( "http://www.steamcommunity.com/profiles/76561198069264171//////" );
+	if( $steamid === FALSE ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	
 	PrintSubTest( "community URL 2" );
 	$steamid = SteamID::Parse( "http://steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
 	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	
 	PrintSubTest( "community URL 3" );
 	$steamid = SteamID::Parse( "www.steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
 	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	
 	PrintSubTest( "community URL 4" );
 	$steamid = SteamID::Parse( "steamcommunity.com/profiles/76561198069264171" );
 	if( $steamid === FALSE ) return FALSE;
@@ -224,12 +235,28 @@ function VanityTest() {
 		}
 		return $name;
 	};
+	
 	PrintSubTest( "simple/direct" );
 	$steamid = SteamID::Parse( "prayspray", SteamID::FORMAT_AUTO, true );
 	if( $steamid === FALSE ) return FALSE;
 	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
+	PrintSubTest( "fullurl" );
+	$steamid = SteamID::Parse( "http://steamcommunity.com/id/prayspray", SteamID::FORMAT_AUTO, true );
+	if( $steamid === FALSE ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
 	
+	PrintSubTest( "fullurl with trailing slash" );
+	$steamid = SteamID::Parse( "http://steamcommunity.com/id/prayspray/", SteamID::FORMAT_AUTO, true );
+	if( $steamid === FALSE ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	
+	PrintSubTest( "fullurl with trailing slashes" );
+	$steamid = SteamID::Parse( "http://steamcommunity.com/id/prayspray/////", SteamID::FORMAT_AUTO, true );
+	if( $steamid === FALSE ) return FALSE;
+	if( $steamid->Format( SteamID::FORMAT_STEAMID32 ) != "STEAM_1:1:54499221" ) return FALSE;
+	
+	PrintSubTest( "random strings" );
 	for( $i = 0; $i < 20; $i++ ) {
 		$name = $buildname( $i );
 		
