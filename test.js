@@ -116,6 +116,13 @@ Tests.Add( "Conversion Test", function() {
 	steamid = SteamID.Parse( "http://www.steamcommunity.com/profiles/76561198069264171" );
 	if( steamid === null ) return false;
 	if( steamid.Format( SteamID.Format.STEAMID32 ) != "STEAM_1:1:54499221" ) return false;
+	steamid = SteamID.Parse( "http://www.steamcommunity.com/profiles/76561198069264171/" );
+	if( steamid === null ) return false;
+	if( steamid.Format( SteamID.Format.STEAMID32 ) != "STEAM_1:1:54499221" ) return false;
+	steamid = SteamID.Parse( "http://www.steamcommunity.com/profiles/76561198069264171////" );
+	if( steamid === null ) return false;
+	if( steamid.Format( SteamID.Format.STEAMID32 ) != "STEAM_1:1:54499221" ) return false;
+	
 	PrintSubTest( "community URL 2" );
 	steamid = SteamID.Parse( "http://steamcommunity.com/profiles/76561198069264171" );
 	if( steamid === null ) return false;
