@@ -278,7 +278,7 @@ class SteamID {
 		if( $result !== FALSE ) return $result;
 		
 		if( preg_match( 
-				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)$/',
+				'/^(?:https?:\/\/)?(?:www.)?steamcommunity.com\/profiles\/([0-9]+)\/?$/',
 				$input, $matches ) ) {
 			$result = self::Parse( $matches[1], self::FORMAT_STEAMID64 );
 			if( $result !== FALSE ) return $result;
